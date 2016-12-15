@@ -17,8 +17,11 @@ package io.github.rockerhieu.emojicon;
 
 import android.content.Context;
 import android.text.Spannable;
+import android.text.style.AbsoluteSizeSpan;
+import android.text.style.RelativeSizeSpan;
 import android.util.SparseIntArray;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -1636,6 +1639,55 @@ public final class EmojiconHandler {
             text.removeSpan(oldSpans[i]);
         }
 
+        int[] textSizes = null;
+
+        if(emojiSize < 0) {
+            // compute the text size at each position
+            textSizes = new int[textLength];
+            Arrays.fill(textSizes, textSize);
+
+            AbsoluteSizeSpan[] absSizeSpans = text.getSpans(0, textLength, AbsoluteSizeSpan.class);
+            for(AbsoluteSizeSpan span : absSizeSpans) {
+                int size = span.getSize();
+                int start = text.getSpanStart(span);
+                int end = text.getSpanEnd(span);
+                int flags = text.getSpanFlags(span);
+
+                if((flags & Spannable.SPAN_EXCLUSIVE_EXCLUSIVE) == Spannable.SPAN_EXCLUSIVE_EXCLUSIVE) {
+                    start++; end--;
+                } else if((flags & Spannable.SPAN_INCLUSIVE_EXCLUSIVE) == Spannable.SPAN_INCLUSIVE_EXCLUSIVE) {
+                    end--;
+                } else if((flags & Spannable.SPAN_EXCLUSIVE_INCLUSIVE) == Spannable.SPAN_EXCLUSIVE_INCLUSIVE) {
+                    start++;
+                }
+
+                for(int i = start; i <= end; i++) {
+                    textSizes[i] = size;
+                }
+            }
+
+            RelativeSizeSpan[] relSizeSpans = text.getSpans(0, textLength, RelativeSizeSpan.class);
+            for(RelativeSizeSpan span : relSizeSpans) {
+                float scale = span.getSizeChange();
+                int start = text.getSpanStart(span);
+                int end = text.getSpanEnd(span);
+                int flags = text.getSpanFlags(span);
+
+                if((flags & Spannable.SPAN_EXCLUSIVE_EXCLUSIVE) == Spannable.SPAN_EXCLUSIVE_EXCLUSIVE) {
+                    start++; end--;
+                } else if((flags & Spannable.SPAN_INCLUSIVE_EXCLUSIVE) == Spannable.SPAN_INCLUSIVE_EXCLUSIVE) {
+                    end--;
+                } else if((flags & Spannable.SPAN_EXCLUSIVE_INCLUSIVE) == Spannable.SPAN_EXCLUSIVE_INCLUSIVE) {
+                    start++;
+                }
+
+                for(int i = start; i <= end; i++) {
+                    textSizes[i] *= scale;
+                }
+            }
+        }
+
+
         int skip;
         for (int i = index; i < textLengthToProcess; i += skip) {
             skip = 0;
@@ -1719,7 +1771,7 @@ public final class EmojiconHandler {
             }
 
             if (icon > 0) {
-                text.setSpan(new EmojiconSpan(context, icon, emojiSize, emojiAlignment, textSize), i, i + skip, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                text.setSpan(new EmojiconSpan(context, icon, emojiSize < 0 ? textSizes[i] : emojiSize, emojiAlignment, textSize), i, i + skip, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         }
     }
