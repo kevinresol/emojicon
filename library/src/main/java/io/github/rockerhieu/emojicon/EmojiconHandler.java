@@ -1662,7 +1662,7 @@ public final class EmojiconHandler {
                 }
 
                 for(int i = start; i <= end; i++) {
-                    textSizes[i] = size;
+                    if(i < textLength) textSizes[i] = size;
                 }
             }
 
@@ -1682,7 +1682,7 @@ public final class EmojiconHandler {
                 }
 
                 for(int i = start; i <= end; i++) {
-                    textSizes[i] *= scale;
+                    if(i < textLength) textSizes[i] *= scale;
                 }
             }
         }
